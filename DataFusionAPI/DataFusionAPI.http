@@ -1,0 +1,6 @@
+@DataFusionAPI_HostAddress = http://localhost:5029
+
+GET {{DataFusionAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

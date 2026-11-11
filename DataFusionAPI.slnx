@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="DataFusionAPI.Core/DataFusionAPI.Core.csproj" />
+  <Project Path="DataFusionAPI.Infrastructure/DataFusionAPI.Infrastructure.csproj" />
+  <Project Path="DataFusionAPI.Tests/DataFusionAPI.Tests.csproj" />
+  <Project Path="DataFusionAPI/DataFusionAPI.csproj" />
+</Solution>
