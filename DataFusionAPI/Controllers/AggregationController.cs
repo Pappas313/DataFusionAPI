@@ -22,9 +22,9 @@ public class AggregationController : ControllerBase
     /// Fetches data from all external sources in parallel, then filters and sorts it.
     /// </summary>
     /// <param name="query">Search term sent to every source. Required.</param>
-    /// <param name="category">Optional case-insensitive category filter.</param>
-    /// <param name="sortBy">"date" or "relevance" (default).</param>
-    /// <param name="sortOrder">"asc" or "desc" (default).</param>
+    /// <param name="category">Optional case-insensitive category filter (e.g. Crypto, movie, tv, or a GitHub language).</param>
+    /// <param name="sortBy">Field to sort by. Defaults to Relevance.</param>
+    /// <param name="sortOrder">Sort direction. Defaults to Desc.</param>
     /// <param name="ct">Cancellation token.</param>
     /// <returns>The aggregated items and the names of sources that failed.</returns>
     /// <response code="200">Aggregated result. Failed sources are listed in <c>failedSources</c>.</response>
@@ -35,8 +35,8 @@ public class AggregationController : ControllerBase
     public async Task<IActionResult> Get(
         [FromQuery] string? query,
         [FromQuery] string? category,
-        [FromQuery] string? sortBy,
-        [FromQuery] string? sortOrder,
+        [FromQuery] SortField? sortBy,
+        [FromQuery] SortDirection? sortOrder,
         CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(query))
@@ -49,7 +49,13 @@ public class AggregationController : ControllerBase
             });
         }
 
-        var result = await _aggregationService.AggregateAsync(query, sortBy, sortOrder, category, ct);
+        var result = await _aggregationService.AggregateAsync(
+            query,
+            sortBy?.ToString().ToLowerInvariant(),
+            sortOrder?.ToString().ToLowerInvariant(),
+            category,
+            ct);
+
         return Ok(result);
     }
 }

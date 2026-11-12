@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <UserSecretsId>datafusionapi-7f3c2b1e-5a4d-4c8e-9b61-2d0e8a1f6c33</UserSecretsId>
     <NoWarn>$(NoWarn);1591</NoWarn>
   </PropertyGroup>
 
