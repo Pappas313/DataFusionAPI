@@ -6,10 +6,10 @@ namespace DataFusionAPI.Infrastructure.Aggregation;
 
 public class AggregationService : IAggregationService
 {
-    private readonly IEnumerable<IExternalApiClient> _clients;
+    private readonly IEnumerable<IAggregationSource> _clients;
     private readonly ILogger<AggregationService> _logger;
 
-    public AggregationService(IEnumerable<IExternalApiClient> clients, ILogger<AggregationService> logger)
+    public AggregationService(IEnumerable<IAggregationSource> clients, ILogger<AggregationService> logger)
     {
         _clients = clients;
         _logger = logger;
@@ -25,11 +25,18 @@ public class AggregationService : IAggregationService
         var outcomes = await Task.WhenAll(_clients.Select(client => FetchSafelyAsync(client, query, ct)));
 
         var failedSources = outcomes
-            .Where(o => o.Items is null)
+            .Where(o => o.Result is null)
             .Select(o => o.Source)
             .ToList();
 
-        IEnumerable<AggregatedItem> items = outcomes.Where(o => o.Items is not null).SelectMany(o => o.Items!);
+        var staleSources = outcomes
+            .Where(o => o.Result is { IsStale: true })
+            .Select(o => o.Source)
+            .ToList();
+
+        IEnumerable<AggregatedItem> items = outcomes
+            .Where(o => o.Result is not null)
+            .SelectMany(o => ScoreByRank(o.Result!.Items));
 
         if (!string.IsNullOrWhiteSpace(category))
         {
@@ -39,12 +46,13 @@ public class AggregationService : IAggregationService
         return new AggregationResult
         {
             Items = Sort(items, sortBy, sortOrder).ToList(),
-            FailedSources = failedSources
+            FailedSources = failedSources,
+            StaleSources = staleSources
         };
     }
 
-    private async Task<(string Source, IReadOnlyList<AggregatedItem>? Items)> FetchSafelyAsync(
-        IExternalApiClient client, string query, CancellationToken ct)
+    private async Task<(string Source, SourceResult? Result)> FetchSafelyAsync(
+        IAggregationSource client, string query, CancellationToken ct)
     {
         try
         {
@@ -53,22 +61,29 @@ public class AggregationService : IAggregationService
         catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
         {
             _logger.LogWarning(ex, "External source {Source} failed.", client.SourceName);
-            return (client.SourceName, null);
+            return (client.SourceName, (SourceResult?)null);
         }
     }
+
+    // Each API returns results best match first, so position within the source is a relevance
+    // signal that is comparable across sources (raw scores are on unrelated scales).
+    private static IEnumerable<AggregatedItem> ScoreByRank(IReadOnlyList<AggregatedItem> items) =>
+        items.Select((item, index) => item with { Score = 1.0 - (double)index / items.Count });
 
     private static IEnumerable<AggregatedItem> Sort(
         IEnumerable<AggregatedItem> items, SortField sortBy, SortDirection sortOrder)
     {
         var ascending = sortOrder == SortDirection.Asc;
-        var byDate = sortBy == SortField.Date;
 
-        return (byDate, ascending) switch
+        if (sortBy == SortField.Date)
         {
-            (true, true) => items.OrderBy(i => i.PublishedOrRelevantDate),
-            (true, false) => items.OrderByDescending(i => i.PublishedOrRelevantDate),
-            (false, true) => items.OrderBy(i => i.RawScore),
-            (false, false) => items.OrderByDescending(i => i.RawScore)
-        };
+            // Undated items always go last, in both directions.
+            var datedFirst = items.OrderBy(i => i.PublishedOrRelevantDate is null);
+            return ascending
+                ? datedFirst.ThenBy(i => i.PublishedOrRelevantDate)
+                : datedFirst.ThenByDescending(i => i.PublishedOrRelevantDate);
+        }
+
+        return ascending ? items.OrderBy(i => i.Score) : items.OrderByDescending(i => i.Score);
     }
 }

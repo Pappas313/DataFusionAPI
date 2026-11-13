@@ -89,7 +89,7 @@ public class ApiClientTests
         Assert.Equal(new DateTimeOffset(1999, 3, 31, 0, 0, 0, TimeSpan.Zero), items[0].PublishedOrRelevantDate);
         Assert.Equal("Show", items[1].Title);
         Assert.Equal("tv", items[1].Category);
-        Assert.Equal(DateTimeOffset.MinValue, items[2].PublishedOrRelevantDate);
+        Assert.Null(items[2].PublishedOrRelevantDate);
         Assert.Contains("api_key=secret", handler.LastRequest!.RequestUri!.ToString());
     }
 

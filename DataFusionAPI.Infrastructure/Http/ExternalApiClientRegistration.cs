@@ -1,3 +1,4 @@
+using System.Net;
 using DataFusionAPI.Core.Interfaces;
 using DataFusionAPI.Infrastructure.Caching;
 using DataFusionAPI.Infrastructure.Options;
@@ -15,7 +16,7 @@ public static class ExternalApiClientRegistration
     /// <summary>
     /// Registers a typed HttpClient for an external API with timing and resilience
     /// (total timeout -> retry with exponential backoff -> circuit breaker -> per-attempt timeout)
-    /// and exposes it, wrapped in a cache, as <see cref="IExternalApiClient"/>.
+    /// and exposes it, wrapped in a cache, as <see cref="IAggregationSource"/>.
     /// All numbers come from <see cref="ResilienceOptions"/> and <see cref="CacheOptions"/>.
     /// </summary>
     public static IHttpClientBuilder AddExternalApiClient<TClient>(
@@ -39,7 +40,7 @@ public static class ExternalApiClientRegistration
             .AddHttpMessageHandler(sp => new TimingHandler(sp.GetRequiredService<IStatsRecorder>(), sourceName));
 
         services.AddMemoryCache();
-        services.AddTransient<IExternalApiClient>(sp => new CachedExternalApiClient(
+        services.AddTransient<IAggregationSource>(sp => new CachedExternalApiClient(
             sp.GetRequiredService<TClient>(),
             sp.GetRequiredService<IMemoryCache>(),
             sp.GetRequiredService<IOptions<CacheOptions>>()));
@@ -53,14 +54,32 @@ public static class ExternalApiClientRegistration
     private static IAsyncPolicy<HttpResponseMessage> GetRetryPolicy(ResilienceOptions o) =>
         HttpPolicyExtensions
             .HandleTransientHttpError()
+            .OrResult(r => r.StatusCode == HttpStatusCode.TooManyRequests)
             .Or<TimeoutRejectedException>()
             .WaitAndRetryAsync(
                 o.RetryCount,
-                attempt => TimeSpan.FromMilliseconds(o.RetryBaseDelayMs * Math.Pow(2, attempt - 1)));
+                (attempt, outcome, _) =>
+                {
+                    var backoff = TimeSpan.FromMilliseconds(o.RetryBaseDelayMs * Math.Pow(2, attempt - 1));
+                    var header = outcome.Result?.Headers.RetryAfter;
+                    var retryAfter = header?.Delta ?? (header?.Date - DateTimeOffset.UtcNow);
+
+                    // Long Retry-After values (GitHub can ask for 60 s) aren't worth holding a
+                    // user request for; the stale cache fallback covers them.
+                    return retryAfter is { } wait && wait >= TimeSpan.Zero
+                        && wait <= TimeSpan.FromSeconds(o.MaxRetryAfterSeconds)
+                        ? wait
+                        : backoff;
+                },
+                (_, _, _, _) => Task.CompletedTask);
 
     private static IAsyncPolicy<HttpResponseMessage> GetCircuitBreakerPolicy(ResilienceOptions o) =>
         HttpPolicyExtensions
             .HandleTransientHttpError()
             .Or<TimeoutRejectedException>()
-            .CircuitBreakerAsync(o.CircuitBreakerFailures, TimeSpan.FromSeconds(o.CircuitBreakDurationSeconds));
+            .AdvancedCircuitBreakerAsync(
+                failureThreshold: o.CircuitBreakerFailureRatio,
+                samplingDuration: TimeSpan.FromSeconds(o.CircuitBreakerSamplingSeconds),
+                minimumThroughput: o.CircuitBreakerMinimumThroughput,
+                durationOfBreak: TimeSpan.FromSeconds(o.CircuitBreakDurationSeconds));
 }

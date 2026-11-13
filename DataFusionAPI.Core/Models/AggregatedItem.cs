@@ -6,6 +6,10 @@ public record AggregatedItem(
     string Title,
     string Description,
     string Url,
-    DateTimeOffset PublishedOrRelevantDate,
+    DateTimeOffset? PublishedOrRelevantDate,
     string Category,
-    double RawScore);
+    double RawScore)
+{
+    /// <summary>Relevance from 0 to 1, comparable across sources.</summary>
+    public double Score { get; init; }
+}

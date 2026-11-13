@@ -18,11 +18,20 @@ public sealed class ResilienceOptions : IValidatableObject
     [Range(1, 10_000)]
     public int RetryBaseDelayMs { get; init; } = 200;
 
-    [Range(1, 100)]
-    public int CircuitBreakerFailures { get; init; } = 3;
+    [Range(0, 60)]
+    public int MaxRetryAfterSeconds { get; init; } = 2;
+
+    [Range(0.01, 1.0)]
+    public double CircuitBreakerFailureRatio { get; init; } = 0.5;
 
     [Range(1, 3_600)]
-    public int CircuitBreakDurationSeconds { get; init; } = 30;
+    public int CircuitBreakerSamplingSeconds { get; init; } = 30;
+
+    [Range(2, 1_000)]
+    public int CircuitBreakerMinimumThroughput { get; init; } = 6;
+
+    [Range(1, 3_600)]
+    public int CircuitBreakDurationSeconds { get; init; } = 15;
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {

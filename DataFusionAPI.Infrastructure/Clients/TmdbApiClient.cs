@@ -49,9 +49,9 @@ public class TmdbApiClient : IExternalApiClient
         var mediaType = r.MediaType ?? "unknown";
         var dateText = !string.IsNullOrEmpty(r.ReleaseDate) ? r.ReleaseDate : r.FirstAirDate;
 
-        var date = DateTimeOffset.TryParse(dateText, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var parsed)
+        DateTimeOffset? date = DateTimeOffset.TryParse(dateText, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var parsed)
             ? parsed
-            : DateTimeOffset.MinValue;
+            : null;
 
         return new AggregatedItem(
             Id: $"tmdb-{mediaType}-{r.Id}",

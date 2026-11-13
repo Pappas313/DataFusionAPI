@@ -31,7 +31,7 @@ public class CachedExternalApiClientTests
         await client.FetchAsync("q", CancellationToken.None);
         var second = await client.FetchAsync("q", CancellationToken.None);
 
-        Assert.Same(Items, second);
+        Assert.Same(Items, second.Items);
         inner.Verify(c => c.FetchAsync("q", It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -50,7 +50,7 @@ public class CachedExternalApiClientTests
 
         var result = await client.FetchAsync("q", CancellationToken.None);
 
-        Assert.Same(Items, result);
+        Assert.Same(Items, result.Items);Assert.True(result.IsStale);
     }
 
     [Fact]
@@ -97,4 +97,5 @@ public class CachedExternalApiClientTests
         inner.Verify(c => c.FetchAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
     }
 }
+
 

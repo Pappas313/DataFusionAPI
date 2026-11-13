@@ -30,18 +30,16 @@ public class CoinGeckoApiClient : IExternalApiClient
         response.EnsureSuccessStatusCode();
 
         var payload = await response.Content.ReadFromJsonAsync<SearchResponse>(cancellationToken);
-        var now = DateTimeOffset.UtcNow;
-
-        return payload?.Coins?.Select(coin => Map(coin, now)).ToList() ?? [];
+        return payload?.Coins?.Select(Map).ToList() ?? [];
     }
 
-    private static AggregatedItem Map(Coin coin, DateTimeOffset now) => new(
+    private static AggregatedItem Map(Coin coin) => new(
         Id: $"coingecko-{coin.Id}",
         Source: Name,
         Title: coin.Name ?? string.Empty,
         Description: $"Symbol: {coin.Symbol}",
         Url: $"https://www.coingecko.com/en/coins/{coin.Id}",
-        PublishedOrRelevantDate: now,
+        PublishedOrRelevantDate: null,
         Category: "Crypto",
         RawScore: coin.MarketCapRank is > 0 ? 1.0 / coin.MarketCapRank.Value : 0);
 
