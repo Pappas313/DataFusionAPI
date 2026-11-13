@@ -67,12 +67,9 @@ public class ApiClientTests
         await Assert.ThrowsAsync<HttpRequestException>(() => client.FetchAsync("q", CancellationToken.None));
     }
 
-    private static IConfiguration Config(string? apiKey)
-    {
-        var config = new Mock<IConfiguration>();
-        config.Setup(c => c["Tmdb:ApiKey"]).Returns(apiKey);
-        return config.Object;
-    }
+    private static Microsoft.Extensions.Options.IOptions<DataFusionAPI.Infrastructure.Options.TmdbOptions> Config(string? apiKey) =>
+        Microsoft.Extensions.Options.Options.Create(
+            new DataFusionAPI.Infrastructure.Options.TmdbOptions { ApiKey = apiKey ?? string.Empty });
 
     [Fact]
     public async Task Tmdb_MapsMovieAndTvResults_AndSendsApiKey()

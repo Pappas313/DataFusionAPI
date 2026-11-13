@@ -1,6 +1,8 @@
 using System.Collections.Concurrent;
 using DataFusionAPI.Core.Interfaces;
 using DataFusionAPI.Core.Models;
+using DataFusionAPI.Infrastructure.Options;
+using Microsoft.Extensions.Options;
 
 namespace DataFusionAPI.Infrastructure.Stats;
 
@@ -10,10 +12,16 @@ namespace DataFusionAPI.Infrastructure.Stats;
 /// </summary>
 public class InMemoryStatsRecorder : IStatsRecorder
 {
-    private const long FastThresholdMs = 100;
-    private const long SlowThresholdMs = 200;
+    private readonly long _fastBelowMs;
+    private readonly long _slowAboveMs;
 
     private readonly ConcurrentDictionary<string, Counters> _counters = new();
+
+    public InMemoryStatsRecorder(IOptions<StatsOptions> options)
+    {
+        _fastBelowMs = options.Value.FastBelowMs;
+        _slowAboveMs = options.Value.SlowAboveMs;
+    }
 
     public void Record(string source, long elapsedMs)
     {
@@ -21,11 +29,11 @@ public class InMemoryStatsRecorder : IStatsRecorder
 
         Interlocked.Add(ref counters.TotalMs, elapsedMs);
 
-        if (elapsedMs < FastThresholdMs)
+        if (elapsedMs < _fastBelowMs)
         {
             Interlocked.Increment(ref counters.Fast);
         }
-        else if (elapsedMs <= SlowThresholdMs)
+        else if (elapsedMs <= _slowAboveMs)
         {
             Interlocked.Increment(ref counters.Average);
         }

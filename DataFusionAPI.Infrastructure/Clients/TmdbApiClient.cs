@@ -3,26 +3,26 @@ using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 using DataFusionAPI.Core.Interfaces;
 using DataFusionAPI.Core.Models;
-using Microsoft.Extensions.Configuration;
+using DataFusionAPI.Infrastructure.Options;
+using Microsoft.Extensions.Options;
 
 namespace DataFusionAPI.Infrastructure.Clients;
 
 /// <summary>
 /// Fetches movies, TV shows and people from TMDB's multi-search endpoint.
-/// The HttpClient must be configured with BaseAddress https://api.themoviedb.org/3/.
-/// The API key is read from configuration key "Tmdb:ApiKey".
+/// BaseAddress and the API key come from <see cref="TmdbOptions"/>.
 /// </summary>
 public class TmdbApiClient : IExternalApiClient
 {
     public const string Name = "TMDB";
 
     private readonly HttpClient _httpClient;
-    private readonly string? _apiKey;
+    private readonly string _apiKey;
 
-    public TmdbApiClient(HttpClient httpClient, IConfiguration configuration)
+    public TmdbApiClient(HttpClient httpClient, IOptions<TmdbOptions> options)
     {
         _httpClient = httpClient;
-        _apiKey = configuration["Tmdb:ApiKey"];
+        _apiKey = options.Value.ApiKey;
     }
 
     public string SourceName => Name;

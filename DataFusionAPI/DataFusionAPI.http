@@ -1,6 +1,11 @@
-@DataFusionAPI_HostAddress = http://localhost:5029
+@DataFusionAPI_HostAddress = https://localhost:7179
 
-GET {{DataFusionAPI_HostAddress}}/weatherforecast/
+GET {{DataFusionAPI_HostAddress}}/api/aggregate?query=matrix&sortBy=Relevance&sortOrder=Desc
+Accept: application/json
+
+###
+
+GET {{DataFusionAPI_HostAddress}}/api/stats
 Accept: application/json
 
 ###

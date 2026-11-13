@@ -26,7 +26,7 @@ public class CachedExternalApiClientTests
         var inner = Inner();
         inner.Setup(c => c.FetchAsync("q", It.IsAny<CancellationToken>())).ReturnsAsync(Items);
         using var cache = new MemoryCache(new MemoryCacheOptions());
-        var client = new CachedExternalApiClient(inner.Object, cache);
+        var client = new CachedExternalApiClient(inner.Object, cache, Microsoft.Extensions.Options.Options.Create(new DataFusionAPI.Infrastructure.Options.CacheOptions()));
 
         await client.FetchAsync("q", CancellationToken.None);
         var second = await client.FetchAsync("q", CancellationToken.None);
@@ -43,7 +43,7 @@ public class CachedExternalApiClientTests
             .ReturnsAsync(Items)
             .ThrowsAsync(new HttpRequestException("down"));
         using var cache = new MemoryCache(new MemoryCacheOptions());
-        var client = new CachedExternalApiClient(inner.Object, cache);
+        var client = new CachedExternalApiClient(inner.Object, cache, Microsoft.Extensions.Options.Options.Create(new DataFusionAPI.Infrastructure.Options.CacheOptions()));
 
         await client.FetchAsync("q", CancellationToken.None);
         cache.Remove("Src:q"); // simulate the 60s TTL expiring
@@ -60,7 +60,7 @@ public class CachedExternalApiClientTests
         inner.Setup(c => c.FetchAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new HttpRequestException("down"));
         using var cache = new MemoryCache(new MemoryCacheOptions());
-        var client = new CachedExternalApiClient(inner.Object, cache);
+        var client = new CachedExternalApiClient(inner.Object, cache, Microsoft.Extensions.Options.Options.Create(new DataFusionAPI.Infrastructure.Options.CacheOptions()));
 
         await Assert.ThrowsAsync<HttpRequestException>(() => client.FetchAsync("q", CancellationToken.None));
     }
@@ -76,7 +76,7 @@ public class CachedExternalApiClientTests
                 return Items;
             });
         using var cache = new MemoryCache(new MemoryCacheOptions());
-        var client = new CachedExternalApiClient(inner.Object, cache);
+        var client = new CachedExternalApiClient(inner.Object, cache, Microsoft.Extensions.Options.Options.Create(new DataFusionAPI.Infrastructure.Options.CacheOptions()));
 
         await Task.WhenAll(Enumerable.Range(0, 10).Select(_ => client.FetchAsync("q", CancellationToken.None)));
 
@@ -89,7 +89,7 @@ public class CachedExternalApiClientTests
         var inner = Inner();
         inner.Setup(c => c.FetchAsync(It.IsAny<string>(), It.IsAny<CancellationToken>())).ReturnsAsync(Items);
         using var cache = new MemoryCache(new MemoryCacheOptions());
-        var client = new CachedExternalApiClient(inner.Object, cache);
+        var client = new CachedExternalApiClient(inner.Object, cache, Microsoft.Extensions.Options.Options.Create(new DataFusionAPI.Infrastructure.Options.CacheOptions()));
 
         await client.FetchAsync("a", CancellationToken.None);
         await client.FetchAsync("b", CancellationToken.None);
@@ -97,3 +97,4 @@ public class CachedExternalApiClientTests
         inner.Verify(c => c.FetchAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
     }
 }
+

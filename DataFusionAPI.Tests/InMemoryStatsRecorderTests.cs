@@ -7,7 +7,7 @@ public class InMemoryStatsRecorderTests
     [Fact]
     public void GetStats_NoRecords_ReturnsEmpty()
     {
-        var recorder = new InMemoryStatsRecorder();
+        var recorder = new InMemoryStatsRecorder(Microsoft.Extensions.Options.Options.Create(new DataFusionAPI.Infrastructure.Options.StatsOptions()));
 
         Assert.Empty(recorder.GetStats());
     }
@@ -15,7 +15,7 @@ public class InMemoryStatsRecorderTests
     [Fact]
     public void GetStats_ComputesTotalAndAverage()
     {
-        var recorder = new InMemoryStatsRecorder();
+        var recorder = new InMemoryStatsRecorder(Microsoft.Extensions.Options.Options.Create(new DataFusionAPI.Infrastructure.Options.StatsOptions()));
         recorder.Record("GitHub", 50);
         recorder.Record("GitHub", 150);
         recorder.Record("GitHub", 400);
@@ -29,7 +29,7 @@ public class InMemoryStatsRecorderTests
     [Fact]
     public void GetStats_AssignsBucketsWithCorrectBoundaries()
     {
-        var recorder = new InMemoryStatsRecorder();
+        var recorder = new InMemoryStatsRecorder(Microsoft.Extensions.Options.Options.Create(new DataFusionAPI.Infrastructure.Options.StatsOptions()));
         foreach (var ms in new long[] { 0, 99, 100, 150, 200, 201, 1000 })
         {
             recorder.Record("S", ms);
@@ -46,7 +46,7 @@ public class InMemoryStatsRecorderTests
     [Fact]
     public void GetStats_TracksSourcesIndependently()
     {
-        var recorder = new InMemoryStatsRecorder();
+        var recorder = new InMemoryStatsRecorder(Microsoft.Extensions.Options.Options.Create(new DataFusionAPI.Infrastructure.Options.StatsOptions()));
         recorder.Record("A", 10);
         recorder.Record("B", 300);
 
@@ -59,7 +59,7 @@ public class InMemoryStatsRecorderTests
     [Fact]
     public void Record_ConcurrentCalls_DoesNotLoseRequests()
     {
-        var recorder = new InMemoryStatsRecorder();
+        var recorder = new InMemoryStatsRecorder(Microsoft.Extensions.Options.Options.Create(new DataFusionAPI.Infrastructure.Options.StatsOptions()));
         const int total = 10_000;
 
         Parallel.For(0, total, i => recorder.Record("Concurrent", i % 300));
@@ -70,3 +70,4 @@ public class InMemoryStatsRecorderTests
         Assert.Equal(total, stats.FastCount + stats.AverageCount + stats.SlowCount);
     }
 }
+
