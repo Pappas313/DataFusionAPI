@@ -17,8 +17,8 @@ public class AggregationService : IAggregationService
 
     public async Task<AggregationResult> AggregateAsync(
         string query,
-        string? sortBy,
-        string? sortOrder,
+        SortField sortBy,
+        SortDirection sortOrder,
         string? category,
         CancellationToken ct)
     {
@@ -57,11 +57,11 @@ public class AggregationService : IAggregationService
         }
     }
 
-    private static IEnumerable<AggregatedItem> Sort(IEnumerable<AggregatedItem> items, string? sortBy, string? sortOrder)
+    private static IEnumerable<AggregatedItem> Sort(
+        IEnumerable<AggregatedItem> items, SortField sortBy, SortDirection sortOrder)
     {
-        var ascending = string.Equals(sortOrder, "asc", StringComparison.OrdinalIgnoreCase);
-
-        var byDate = string.Equals(sortBy, "date", StringComparison.OrdinalIgnoreCase);
+        var ascending = sortOrder == SortDirection.Asc;
+        var byDate = sortBy == SortField.Date;
 
         return (byDate, ascending) switch
         {

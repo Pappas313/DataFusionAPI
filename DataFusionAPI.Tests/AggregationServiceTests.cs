@@ -42,7 +42,7 @@ public class AggregationServiceTests
             Client("B", Item("b1", "B", "news", 0.7, 3)),
             Client("C", Item("c1", "C", "news", 0.1, 4)));
 
-        var result = await service.AggregateAsync("q", null, null, null, CancellationToken.None);
+        var result = await service.AggregateAsync("q", SortField.Relevance, SortDirection.Desc, null, CancellationToken.None);
 
         Assert.Empty(result.FailedSources);
         Assert.Equal(new[] { "a2", "b1", "a1", "c1" }, result.Items.Select(i => i.Id));
@@ -56,7 +56,7 @@ public class AggregationServiceTests
             Client("B", Item("b1", "B", "news", 0.7, 3)),
             Client("C", Item("c1", "C", "news", 0.1, 2)));
 
-        var result = await service.AggregateAsync("q", "date", "asc", null, CancellationToken.None);
+        var result = await service.AggregateAsync("q", SortField.Date, SortDirection.Asc, null, CancellationToken.None);
 
         Assert.Equal(new[] { "b1", "c1", "a1" }, result.Items.Select(i => i.Id));
     }
@@ -69,7 +69,7 @@ public class AggregationServiceTests
             FailingClient("B"),
             Client("C", Item("c1", "C", "news", 0.1, 2)));
 
-        var result = await service.AggregateAsync("q", null, null, null, CancellationToken.None);
+        var result = await service.AggregateAsync("q", SortField.Relevance, SortDirection.Desc, null, CancellationToken.None);
 
         Assert.Equal(new[] { "B" }, result.FailedSources);
         Assert.Equal(2, result.Items.Count);
@@ -84,8 +84,9 @@ public class AggregationServiceTests
             Client("B", Item("b1", "B", "news", 0.7, 1)),
             Client("C", Item("c1", "C", "Music", 0.1, 1)));
 
-        var result = await service.AggregateAsync("q", null, null, "NEWS", CancellationToken.None);
+        var result = await service.AggregateAsync("q", SortField.Relevance, SortDirection.Desc, "NEWS", CancellationToken.None);
 
         Assert.Equal(new[] { "b1", "a1" }, result.Items.Select(i => i.Id));
     }
 }
+

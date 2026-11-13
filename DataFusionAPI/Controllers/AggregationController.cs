@@ -51,8 +51,8 @@ public class AggregationController : ControllerBase
 
         var result = await _aggregationService.AggregateAsync(
             query,
-            sortBy?.ToString().ToLowerInvariant(),
-            sortOrder?.ToString().ToLowerInvariant(),
+            sortBy ?? SortField.Relevance,
+            sortOrder ?? SortDirection.Desc,
             category,
             ct);
 
